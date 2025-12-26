@@ -89,7 +89,7 @@ private void CalculateHeightMap()
 
 - Attempt three: This time, I completely started from scratch. I began work on this iteration *after* the Texas Game Jam, which boosted my confidence and motivation. I switched from true 2D to 2.5D, in which the world was composed of 3D models but the camera was top down and the resolution scaled dramatically down. After switching to designing in 3D, I dedicated this project to be an intro to graphics... and I found myself quickly overwhelmed. I fell into a trap: relying on tutorials. Since my previous attempts were unsuccessful, I tried using more resources. This included YouTube, StackOverflow, Reddit, and AI. Most of the sources I found were way beyond my scope. I didn't fully absorb tutorials, and was soon walking out of finished scripts or sub graphs feeling even *less* sure than before. This led to complications quite quickly; before long I had problems with underlying systems that I didn't know how to change. I stuck with what I had, though, because it wasn't terrible. Not exactly presentable, but not an eyesore.
 
-      Due to the fundamental problems, I decided to wrap up the project. I ended it by writing a few more features that were entirely my own. The first was a buouyancy system for the pirate ship. This turned out to be mathematically challenging, as you cannot extract height from an x, z coordinate directly while using Gerstner waves. Gerstner waves displace vertices in all three axes, which means that to get a precise point there has to be a degree of approximation. The other system I wrote was a splashing function. This adds waves that propogate outward as though from a splash. They can interfere with the basic Gerstner waves, both amplifying and dampening. I attached this HLSL script to my ship, so that as it traversed the seas a dynamic wake would be created from the ship's stern. I wrote in HLSL and made a custom node function in shader graph, as well as some scripting in C#. Walking out of this project, this was the feature I was most proud of.
+      Due to the fundamental problems, I decided to wrap up the project. I ended it by writing a few more features that were entirely my own. The first was a buoyancy system for the pirate ship. This turned out to be mathematically challenging, as you cannot extract height from an x, z coordinate directly while using Gerstner waves. Gerstner waves displace vertices in all three axes, which means that to get a precise point there has to be a degree of approximation. The other system I wrote was a splashing function. This adds waves that propogate outward as though from a splash. They can interfere with the basic Gerstner waves, both amplifying and dampening. I attached this HLSL script to my ship, so that as it traversed the seas a dynamic wake would be created from the ship's stern. I wrote in HLSL and made a custom node function in shader graph, as well as some scripting in C#. Walking out of this project, this was the feature I was most proud of.
   
   - **How it's done**
 
@@ -122,7 +122,7 @@ private void CalculateHeightMap()
     ![Trochoidal_wave](https://github.com/user-attachments/assets/0c171173-b8d6-4a05-99e4-0bbe8cf903f0)<br>
     *Figure 3: Trochoidal (Gerstner) Waves*
 
-    These equations were plugged into shader graph, and make decently convincing waves. To spruce up our ocean, we add multiple Gerstner waves, with different variables. Playing with them is quite fun, but it never truly makes a convincing sea; for that, we would need many, many waves. There are two solutions to this. One: we switch to fast Fourier transform, or two: add normal maps and textures. I went with the second option out of ease, but I intend to learn Fourier transforms for Unity at some point (A project idea is decoding the sound waves of various instruments to create basic synths!). The waves are now decently convincing, but the ship still isn't. The next thing I added was a buouyancy feature.
+    These equations were plugged into shader graph, and make decently convincing waves. To spruce up our ocean, we add multiple Gerstner waves, with different variables. Playing with them is quite fun, but it never truly makes a convincing sea; for that, we would need many, many waves. There are two solutions to this. One: we switch to fast Fourier transform, or two: add normal maps and textures. I went with the second option out of ease, but I intend to learn Fourier transforms for Unity at some point (A project idea is decoding the sound waves of various instruments to create basic synths!). The waves are now decently convincing, but the ship still isn't. The next thing I added was a buoyancy feature.
  
     <img width="2431" height="1137" alt="Screenshot 2025-12-24 201354" src="https://github.com/user-attachments/assets/d6460410-b81d-434a-8fee-c8bc8647ad6f" /><br>
     *Figure 4: Floating Pirate Ship*
@@ -162,10 +162,10 @@ private void CalculateHeightMap()
 
 - Due to the amount of control I wanted over the water's appearance, there are a ridiculous amount of parameters to each function. This is a great example of how I could have improved code. There are two specific things I've learned that could clean this up drastically--scriptable objects, and class instancing.
 
-  To finish the buouyancy script, the heights of the ship's buouys and the water's buouys were compared, and a force was added. Similarly, the heights of the buouys relative to each other was compared to rotate the ship. Now that forces were dynamically added, depending on where the ship steered it's speed would be amplified or dampened.
+  To finish the buoyancy script, the heights of the ship's buoys and the water's buoys were compared, and a force was added. Similarly, the heights of the buoys relative to each other was compared to rotate the ship. Now that forces were dynamically added, depending on where the ship steered it's speed would be amplified or dampened.
 
 <img width="2385" height="849" alt="Screenshot 2025-12-24 201632" src="https://github.com/user-attachments/assets/c1252340-91db-4905-8ffb-f8b122fa103b" /><br>
-*Figure 5: Pirate Ship with Buouys*
+*Figure 5: Pirate Ship with buoys*
   
 
 - The next system that was added was a splashing system. An advantage or Gerstner waves was that it was *really* easy to further displace vertices; I only needed to add the splash function to the preexisting Gerstner function. To do this, I created a custom node in the HLSL script that could create a splash and used generic wave propogation equations straight out of my mechanics class. 
@@ -237,7 +237,7 @@ private void CalculateHeightMap()
 - I plan to add some of the features of this simulation to my procedural planet generator, so I can make dynamic gravity with planets' water. When I do that, however, those features will be changed fairly significantly. I would also like to note that the procedural planet project was an answer to the problems from this project; it's a modular project so any underlying problems *don't* effect every other system directly, whereas with the water system here changing something in a fundamental script would introduce problems in later scripts. If you would like to reach out, please email me at mray0256@gmail.com. Thanks!
 
 ## Sources & Inspirations
-- Ship Buouyancy: [Tom Weiland on YouTube](https://www.youtube.com/watch?v=eL_zHQEju8s)
+- Ship buoyancy: [Tom Weiland on YouTube](https://www.youtube.com/watch?v=eL_zHQEju8s)
 - Pirate Game Inspiration: [V.A. on youTube](https://www.youtube.com/watch?v=uwU9ZaQ9PhY)
 - Gerstner Waves: [Zicore on YouTube](https://www.youtube.com/watch?v=Awd1hRpLSoI)
 - Pirate Ship Model: [PolyRem on YouTube](https://www.youtube.com/watch?v=MoqXP7tpL1o&t=500s)
