@@ -170,11 +170,11 @@ private void CalculateHeightMap()
 
 - The next system that was added was a splashing system. An advantage or Gerstner waves was that it was *really* easy to further displace vertices; I only needed to add the splash function to the preexisting Gerstner function. To do this, I created a custom node in the HLSL script that could create a splash and used generic wave propogation equations straight out of my mechanics class. 
 
-  $\y(r, t) = A\sin(kr - \omega t) $
+  $\ y(r, t) = A\sin(kr - \omega t) $
 
   where
 
-  $\r = \sqrt{(worldPos.x - waveOrigin.x)^2 + (worldPos.z - waveOrigin.z)^2} $
+  $\ r = \sqrt{(worldPos.x - waveOrigin.x)^2 + (worldPos.z - waveOrigin.z)^2} $
 
 	This wave equation was then multiplied by a a fadeOut and fadeIn equation, both of which simply go from 0 to 1 in a short period of time. Finally, the equation was passed into a lerp function, where the added height from the splash would go from y(r, t) to 0 in a set amount of time. The only thing I would change about this in the future would be changing the dampening of the splash to be a sigmoid instead of a linear function. Additionally, this function is **not** accurate to, for example, a cannonball splash. For correct physics, the vertices would need to follow Navier-Stokes equations upon the initial impact. The effect is still convincing when covered by particles and pixelated.
 
