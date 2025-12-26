@@ -20,10 +20,13 @@ This repository does not contain any scripts from Unity, as any code of interest
   - Attempt one: My first try was making a grid of cells. If one cell grew in magnitude, the cells around it would also increase. All cells had a dampening factor and there was a "wave" equation that would pass through all cells, repeating over time. However, this wave propogation never quite worked, and trying to visualize a thousand cells with no knowledge of anything GPU failed. This first attempt quickly grew too laggy and I realized I needed to up my game.
     
   - Attemp two: I stuck with the same system, but tried something else: instead of the cells belonging to world position, they followed the player around. If the player moved, the values inside the cells moved dynamically too. Again, conceptually I don't think this was a terrible idea, I simply did not know enough code to achieve it satisfyingly. If I were to redo either of these, I'd use hashsets, dictionaries, compute shaders, and shadergraph.
-    
-  - Attempt three: This time, I completely started from scratch. I switched from true 2D to 2.5D, in which the world was composed of 3D models but the camera was top down and the resolution scaled dramatically down. I modeled a basic pirate ship in blender, then imported it into Unity and got to work. After switching to designing in 3D, I dedicated this project to be an intro to graphics... and I found myself quickly overwhelmed. The first thing I did was learn shadergraph. This seemed the most simple of the nice-to-know graphics features. However, I quickly fell into a trap: relying on tutorials. Since my previous attempts were unsuccessful, I tried using more resources. This included YouTube, StackOverflow, Reddit, and AI. Most of the sources I found were way beyond my scope. I didn't fully absorb tutorials, and was soon walking out of finished scripts or sub graphs feeling even *less* sure than before. This led to complications quite quickly; before long I had problems with underlying systems that I didn't know how to change. I stuck with what I had, though, because it wasn't terrible. Not a finished quality, but not an eyesore.
 
-      I decided to wrap up the project. I ended it by writing a few more features that were entirely my own. The first was a buouyancy system for the pirate ship. This turned out to be mathematically challenging, as you cannot extract height from an x, z coordinate directly while using Gerstner waves. Gerstner waves displace vertices in all three axes, which means that to get a precise point there has to be a degree of approximation. The other system I wrote was a splashing function. This adds waves that propogate outward as though from a splash. They can interfere with the basic Gerstner waves, both amplifying and dampening. I attached this HLSL script to my ship, so that as it traversed the seas a dynamic wake would be created from the ship's stern. I wrote in HLSL and made a custom node function, as well as some scripting in C#. Walking out of this project, this was the feature I was most proud of.
+![OldSplash](https://github.com/user-attachments/assets/19beae01-da6c-458d-9e9b-4ef95cd8a223)
+*Figure 2: First attempt at Creating Splashes*
+
+  - Attempt three: This time, I completely started from scratch. I began work on this iteration *after* the Texas Game Jam, one of my other projects. I switched from true 2D to 2.5D, in which the world was composed of 3D models but the camera was top down and the resolution scaled dramatically down. I modeled a basic pirate ship in blender, then imported it into Unity and got to work. After switching to designing in 3D, I dedicated this project to be an intro to graphics... and I found myself quickly overwhelmed. The first thing I did was learn shadergraph. This seemed the most simple of the nice-to-know graphics features. However, I quickly fell into a trap: relying on tutorials. Since my previous attempts were unsuccessful, I tried using more resources. This included YouTube, StackOverflow, Reddit, and AI. Most of the sources I found were way beyond my scope. I didn't fully absorb tutorials, and was soon walking out of finished scripts or sub graphs feeling even *less* sure than before. This led to complications quite quickly; before long I had problems with underlying systems that I didn't know how to change. I stuck with what I had, though, because it wasn't terrible. Not exactly presentable, but not an eyesore.
+
+      I decided to wrap up the project. I ended it by writing a few more features that were entirely my own. The first was a buouyancy system for the pirate ship. This turned out to be mathematically challenging, as you cannot extract height from an x, z coordinate directly while using Gerstner waves. Gerstner waves displace vertices in all three axes, which means that to get a precise point there has to be a degree of approximation. The other system I wrote was a splashing function. This adds waves that propogate outward as though from a splash. They can interfere with the basic Gerstner waves, both amplifying and dampening. I attached this HLSL script to my ship, so that as it traversed the seas a dynamic wake would be created from the ship's stern. I wrote in HLSL and made a custom node function in shader graph, as well as some scripting in C#. Walking out of this project, this was the feature I was most proud of.
   
   - **How it's done**
 
@@ -54,12 +57,12 @@ This repository does not contain any scripts from Unity, as any code of interest
     h = Depth
 
     ![Trochoidal_wave](https://github.com/user-attachments/assets/0c171173-b8d6-4a05-99e4-0bbe8cf903f0)<br>
-    *Figure 2: Trochoidal (Gerstner) Waves*
+    *Figure 3: Trochoidal (Gerstner) Waves*
 
     These equations were plugged into shader graph, and make a decently convincing waves. To spruce up our ocean, we add multiple Gerstner waves, with different variables. Playing with them is quite fun, but it never truly makes a convincing sea; for that, we would need many, many waves. There are two solutions to this. One: we switch to fast Fourier transform, or two: add normal maps and textures. I went with the second option out of ease, but I intend to learn Fourier transforms for Unity at some point (A project idea is decoding the sound waves of various instruments to create basic synths!). The waves are now decently convincing, but the ship still isn't. The next thing I added was a buouyancy feature.
  
     <img width="2431" height="1137" alt="Screenshot 2025-12-24 201354" src="https://github.com/user-attachments/assets/d6460410-b81d-434a-8fee-c8bc8647ad6f" /><br>
-    *Figure 3: Floating Pirate Ship*
+    *Figure 4: Floating Pirate Ship*
 
     Four points were placed on the ship's hull in a rectangle. These points are fixed with the ship. Since the can rotate while moving with the A and D keys, I needed the points to rotate about the center of the ship. This took some minor trig equations. This is tracked by:
     
@@ -70,11 +73,15 @@ This repository does not contain any scripts from Unity, as any code of interest
 
     Now that these points accurately follow the ship, I added a second set of points on the exact same x and z coordinate; these points differ in the fact that their y position follows precisely where the water level is, while the y coordinate of the first set of points follows the ship. The next function I added returned the water height at a given position. For this to work, I had to approximate the height as described earlier.
 
-    Multiple methods were written to perform the same Gerstner wave calculations as written in shader graph. After these were complete, they returned the *change* in each coordinate from each wave. Even though an exact height couldn't be determined, a change in what the height originally was could be (As well as x and z positions). After Deltas was written, a second function called FindAB was written. In the equations from earlier, you might notice $\alpha $ and $\beta $ represent Vertex Positions. In an actual equation, these locations have an unknown offset. If we can calculate the change in x and z, we can apply this change to $\alpha $ and $\beta $ to find our y coordinate at an exact position.
+    Multiple methods were written to perform the same Gerstner wave calculations as written in shader graph. After these were complete, they returned the *change* in each coordinate from each wave. Even though an exact height couldn't be determined, a change in what the height originally was could be (As well as x and z positions). After Deltas was written, a second function called FindAB was written. In the equations from earlier, you might notice $\alpha$ and $\beta$ represent Vertex Positions. In an actual equation, these locations have an unknown offset. If we can calculate the change in x and z, we can apply this change to $\alpha$ and $\beta$ to find our y coordinate at an exact position.
     
-    We start with a guess: $\alpha = \text{currentPos.x} $ and $\beta = \text{currentPos.z} $. Then, we calculate the deltas. If we did this once, however, our approximation is still wrong. It will swing too far in the opposite direction. To counteract this, we lerp *most* of the way there, but not all of the way. Now we're close, but still a little off. We can recalculate the deltas and lerp again. With each recalculation, we swing around the accurate point like a dampening sin wave. With the right relax value (lerp input) this process is shortened. Currently, my relxas is set to 0.7 with 3 iterations. Note that the code below is my own, but the approximation solution was *not* my own.
+    We start with a guess:
 
-    Now that $\alpha $ and $\beta $ are written, we can plug in them into our deltas function from earlier. This finds the y displacement at precisely the x and z coordinate inputted. Now, we can return currentPos.y + dy.
+    $\alpha = currentPos.x$ and $\beta = currentPos.z$
+
+    Then, we calculate the deltas. If we did this once, however, our approximation is still wrong. It will swing too far in the opposite direction. To counteract this, we lerp *most* of the way there, but not all of the way. Now we're close, but still a little off. We can recalculate the deltas and lerp again. With each recalculation, we swing around the accurate point like a dampening sin wave. With the right relax value (lerp input) this process is shortened. Currently, my relxas is set to 0.7 with 3 iterations. Note that the code below is my own, but the approximation solution was *not* my own.
+
+    Now that $\alpha$ and $\beta$ are written, we can plug in them into our deltas function from earlier. This finds the y displacement at precisely the x and z coordinate inputted. Now, we can return currentPos.y + dy.
 
     ```csharp
     float fixed_displacement(Vector3 Position, Vector3 Dir1, Vector3 Dir2, Vector3 Dir3, Vector3 Dir4, Vector4 TimeScale, float Gravity, float Phase, float Depth, float amp1, float amp2, float amp3, float amp4, float time)
@@ -95,20 +102,20 @@ This repository does not contain any scripts from Unity, as any code of interest
   To finish the buouyancy script, the heights of the ship's buouys and the water's buouys were compared, and a force was added. Similarly, the heights of the buouys relative to each other was compared to rotate the ship. Now that forces were dynamically added, depending on where the ship steered it's speed would be amplified or dampened.
 
 <img width="2385" height="849" alt="Screenshot 2025-12-24 201632" src="https://github.com/user-attachments/assets/c1252340-91db-4905-8ffb-f8b122fa103b" /><br>
-*Figure 2: Pirate Ship with Buouys*
+*Figure 5: Pirate Ship with Buouys*
   
 
 The next system that was added was a splashing system. An advantage or Gerstner waves was that it was *really* easy to further displace vertices; I only needed to add the splash function to the preexisting Gerstner function. To do this, I created a custom node in the HLSL script that could create a splash and used generic wave propogation equations straight out of my mechanics class. 
 
-  $ y(r, t) = A\sin(kr - \omega t) $
+  $\y(r, t) = A\sin(kr - \omega t) $
 
   where
 
-  $ r = \sqrt{(worldPos.x - waveOrigin.x)^2 + (worldPos.z - waveOrigin.z)^2} $
+  $\r = \sqrt{(worldPos.x - waveOrigin.x)^2 + (worldPos.z - waveOrigin.z)^2} $
 
   This wave equation was then multiplied by a a fadeOut and fadeIn equation, both of which simply go from 0 to 1 in a short period of time. Finally, the equation was passed into a lerp function, where the added height from the splash would go from y(r, t) to 0 in a set amount of time. The only thing I would change about this in the future would be changing the dampening of the splash to be a sigmoid instead of a linear function. Additionally, this function is **not** accurate to, for example, a cannonball splash. For correct physics, the vertices would need to follow Navier-Stokes equations upon the initial impact. The effect is still convincing when covered by particles and pixelated.
 
-  Now onto coding the problem. This was my first time using HLSL. Naturally, there was a two hour period of diagnosing bugs as shader graph tried to access the wrong file. I am still not entirely sure why, but I chalked it up to poor internet and moved on. One of my project goals is to build a small DS-like console out of a Raspberry Pi and similar components. When I do, I would like to import my Unity projects. Regardless of whether that comes to fruition, I designed this project with the ability to be run on a lightweight device. Because of this, I decided to limit the spawned waves with fixed arrays. This also made transferring data to materials easy.
+  Now onto coding the problem. This was my first time using HLSL. Naturally, there was a two hour period of diagnosing bugs as shader graph tried to access the wrong file. I am still not entirely sure why, but I chalked it up to poor internet and moved on. One of my future project goals is to build a small DS-like console out of a Raspberry Pi and similar components. When I do, I would like to import my Unity projects. Regardless of whether that comes to fruition, I designed this project with the ability to be run on a lightweight device. Because of this, I decided to limit the spawned waves with fixed arrays. This also made transferring data to materials easy.
 
   ```csharp
   #ifndef SPLASH_NODE
@@ -156,10 +163,10 @@ The next system that was added was a splashing system. An advantage or Gerstner 
   To transfer data from script to HLSL, I designed a class named SplashInfo. It currently has three functions: AddWave, UpdateShader, and DeleteWaves. What's nice is that SplashInfo contains modifiable lists, but when it transfers data to the water material, it only sends an array (currently of size 16). There is one instance of SplashInfo that exists, so other scripts can easily access it and summon splashes. Currently, the camera performs a raycast when the user left-clicks. If the raycast hits water, then a splash is spawned at that location. Additionally, the boat constantly cycles through splashes to create a wake. Additionally, in the same MonoBehavior as SplashInfo (but outside the class!) there is a function that can change the water intensity. It is a multiplier to the Gerstner waves' amplitudes. This can be used for dynamic weather. 
 
   ![ShadedSplashed](https://github.com/user-attachments/assets/b1254a95-af0c-4fc1-b5ab-e9f175ea940e)<br>
-*Figure 3: Shaded Splash Created from Raycast*
+*Figure 6: Shaded Splash Created from Raycast*
 
 ![WireFrameSplash](https://github.com/user-attachments/assets/ab8e9a9b-9b30-4c51-b9a0-765dbaef43a5)<br>
-*Figure 4: Wireframe Splash Created from Raycast*
+*Figure 7: Wireframe Splash Created from Raycast*
   
   That concludes my graphics intro! In the end, I made no shortage of mistakes; but learned from all of them. Though I was never satisfied with the water from this project, I feel confident that the next time I create water it will exceed my original vision!
     
