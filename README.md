@@ -180,7 +180,7 @@ private void CalculateHeightMap()
 
 	Now onto coding the problem. One of my future project goals is to build a small DS-like console out of a Raspberry Pi and similar components. When I do, I would like to import my Unity projects. Regardless of whether that comes to fruition, I designed this project with the ability to be run on a lightweight device. Thus, I decided to limit the spawned waves with fixed arrays. This also made transferring data to materials easy.
 
-  ```csharp
+  ```hlsl
   #ifndef SPLASH_NODE
   #define SPLASH_NODE
 
