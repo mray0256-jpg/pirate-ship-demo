@@ -30,23 +30,31 @@ This repository does not contain any scripts from Unity, as any code of interest
     Gerstner Wave Equations:
     
     $\ x = \alpha - \sum_{M}^{m = 1}\frac{k_{x,m}}{k_m}\frac{a_m}{\tanh(k_mh)}sin(\theta_m) $
+    
     $\ y = \sum_{M}^{m = 1}a_mcos(\theta_m) $
+    
     $\ z = \beta - \sum_{M}^{m = 1}\frac{k_{z,m}}{k_m}\frac{a_m}{\tanh(k_mh)}sin(\theta_m) $
 
     where
 
     $\theta = k_{x,m}\alpha + k_{z,m}\beta - \omega_mt-\phi_m $
+    
     $\omega_m = \sqrt{gk_m\tanh(k_mh)} $
 
     m = Wave Component
-    $\alpha $ = Vertex Position.x
-    $\beta $ = Vertex Position.z
-    $k_m $ = Wave Direction
-    $a_m $ = Amplitude
+    
+    $\alpha$ = Vertex Position.x
+    
+    $\beta$ = Vertex Position.z
+    
+    $k_m$ = Wave Direction
+    
+    $a_m$ = Amplitude
+    
     h = Depth
 
     ![Trochoidal_wave](https://github.com/user-attachments/assets/0c171173-b8d6-4a05-99e4-0bbe8cf903f0)<br>
-    *Figure 1: Trochoidal (Gerstner) Waves*
+    *Figure 2: Trochoidal (Gerstner) Waves*
 
     These equations were plugged into shader graph, and make a decently convincing waves. To spruce up our ocean, we add multiple Gerstner waves, with different variables. Playing with them is quite fun, but it never truly makes a convincing sea; for that, we would need many, many waves. There are two solutions to this. One: we switch to fast Fourier transform, or two: add normal maps and textures. I went with the second option out of ease, but I intend to learn Fourier transforms for Unity at some point (A project idea is decoding the sound waves of various instruments to create basic synths!). The waves are now decently convincing, but the ship still isn't. The next thing I added was a buouyancy feature.
  
@@ -64,7 +72,7 @@ This repository does not contain any scripts from Unity, as any code of interest
 
     Multiple methods were written to perform the same Gerstner wave calculations as written in shader graph. After these were complete, they returned the *change* in each coordinate from each wave. Even though an exact height couldn't be determined, a change in what the height originally was could be (As well as x and z positions). After Deltas was written, a second function called FindAB was written. In the equations from earlier, you might notice $\alpha $ and $\beta $ represent Vertex Positions. In an actual equation, these locations have an unknown offset. If we can calculate the change in x and z, we can apply this change to $\alpha $ and $\beta $ to find our y coordinate at an exact position.
     
-    We start with a guess: $\alpha = currentPos.x $ and $\beta = currentPos.z $. Then, we calculate the deltas. If we did this once, however, our approximation is still wrong. It will swing too far in the opposite direction. To counteract this, we lerp *most* of the way there, but not all of the way. Now we're close, but still a little off. We can recalculate the deltas and lerp again. With each recalculation, we swing around the accurate point like a dampening sin wave. With the right relax value (lerp input) this process is shortened. Currently, my relxas is set to 0.7 with 3 iterations. Note that the code below is my own, but the approximation solution was *not* my own.
+    We start with a guess: $\alpha = \text{currentPos.x} $ and $\beta = \text{currentPos.z} $. Then, we calculate the deltas. If we did this once, however, our approximation is still wrong. It will swing too far in the opposite direction. To counteract this, we lerp *most* of the way there, but not all of the way. Now we're close, but still a little off. We can recalculate the deltas and lerp again. With each recalculation, we swing around the accurate point like a dampening sin wave. With the right relax value (lerp input) this process is shortened. Currently, my relxas is set to 0.7 with 3 iterations. Note that the code below is my own, but the approximation solution was *not* my own.
 
     Now that $\alpha $ and $\beta $ are written, we can plug in them into our deltas function from earlier. This finds the y displacement at precisely the x and z coordinate inputted. Now, we can return currentPos.y + dy.
 
@@ -86,7 +94,7 @@ This repository does not contain any scripts from Unity, as any code of interest
 
   To finish the buouyancy script, the heights of the ship's buouys and the water's buouys were compared, and a force was added. Similarly, the heights of the buouys relative to each other was compared to rotate the ship. Now that forces were dynamically added, depending on where the ship steered it's speed would be amplified or dampened.
 
-    <img width="2385" height="849" alt="Screenshot 2025-12-24 201632" src="https://github.com/user-attachments/assets/c1252340-91db-4905-8ffb-f8b122fa103b" /><br>
+<img width="2385" height="849" alt="Screenshot 2025-12-24 201632" src="https://github.com/user-attachments/assets/c1252340-91db-4905-8ffb-f8b122fa103b" /><br>
 *Figure 2: Pirate Ship with Buouys*
   
 
