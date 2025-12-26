@@ -1,5 +1,5 @@
 # pirate-ship-demo
-A short water simulation that served as a lesson in graphics and shaders
+A short water simulation that served as a lesson in graphics and shaders.
 
 <img width="2462" height="1234" alt="Screenshot 2025-12-24 202310" src="https://github.com/user-attachments/assets/4b4cbe34-099b-4f05-adc3-5dbbca82c681" /><br>
 *Figure 1: Pirate Ship*
