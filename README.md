@@ -28,20 +28,20 @@ This repository does not contain any scripts from Unity, as any code of interest
   - **How it's done**
 
     Gerstner Wave Equations:
-    $\ x = \alpha - \sum_{M}^{m = 1}\frac{k_{x,m}}{k_m}\frac{a_m}{\tanh(k_mh)}sin(\theta_m) $ <br>
-    $\ y = \sum_{M}^{m = 1}a_mcos(\theta_m) $ <br>
-    $\ z = \beta - \sum_{M}^{m = 1}\frac{k_{z,m}}{k_m}\frac{a_m}{\tanh(k_mh)}sin(\theta_m) $ <br>
+    $ x = \alpha - \sum_{M}^{m = 1}\frac{k_{x,m}}{k_m}\frac{a_m}{\tanh(k_mh)}sin(\theta_m) $ <br>
+    $ y = \sum_{M}^{m = 1}a_mcos(\theta_m) $ <br>
+    $ z = \beta - \sum_{M}^{m = 1}\frac{k_{z,m}}{k_m}\frac{a_m}{\tanh(k_mh)}sin(\theta_m) $ <br>
 
     where
 
-    $\ \theta = k_{x,m}\alpha + k_{z,m}\beta - \omega_mt-\phi_m $ <br>
-    $\ \omega_m = \sqrt{gk_m\tanh(k_mh)} $ <br>
+    $ \theta = k_{x,m}\alpha + k_{z,m}\beta - \omega_mt-\phi_m $ <br>
+    $ \omega_m = \sqrt{gk_m\tanh(k_mh)} $ <br>
 
     m = Wave Component
-    $\ \alpha $ = Vertex Position.x <br>
-    $\ \beta $ = Vertex Position.z <br>
-    $\ k_m $ = Wave Direction <br>
-    $\ a_m $ = Amplitude <br>
+    $ \alpha $ = Vertex Position.x <br>
+    $ \beta $ = Vertex Position.z <br>
+    $ k_m $ = Wave Direction <br>
+    $ a_m $ = Amplitude <br>
     h = Depth <br>
 
     ![Trochoidal_wave](https://github.com/user-attachments/assets/0c171173-b8d6-4a05-99e4-0bbe8cf903f0)<br>
@@ -61,7 +61,7 @@ This repository does not contain any scripts from Unity, as any code of interest
 
     Now that these points accurately follow the ship, I added a second set of points on the exact same x and z coordinate; these points differ in the fact that their y position follows precisely where the water level is, while the y coordinate of the first set of points follows the ship. The next function I added returned the water height at a given position. For this to work, I had to approximate the height as described earlier.
 
-    Multiple methods were written to perform the same Gerstner wave calculations as written in shader graph. After these were complete, they returned the *change* in each coordinate from each wave. Even though an exact height couldn't be determined, a change in what the height originally was could be (As well as x and z positions). After Deltas was written, a second function called FindAB was written. In the equations from earlier, you might notice $\ \alpha $ and $\ \beta $ represent Vertex Positions. In an actual equation, these locations have an unknown offset. If we can calculate the change in x and z, we can apply this change to $\ \alpha $ and $\ \beta $ to find our y coordinate at an exact position.
+    Multiple methods were written to perform the same Gerstner wave calculations as written in shader graph. After these were complete, they returned the *change* in each coordinate from each wave. Even though an exact height couldn't be determined, a change in what the height originally was could be (As well as x and z positions). After Deltas was written, a second function called FindAB was written. In the equations from earlier, you might notice $ \alpha $ and $ \beta $ represent Vertex Positions. In an actual equation, these locations have an unknown offset. If we can calculate the change in x and z, we can apply this change to $\ \alpha $ and $\ \beta $ to find our y coordinate at an exact position.
     
     We start with a guess: $\ \alpha = currentPos.x $ and $\ \beta = currentPos.z $. Then, we calculate the deltas. If we did this once, however, our approximation is still wrong. It will swing too far in the opposite direction. To counteract this, we lerp *most* of the way there, but not all of the way. Now we're close, but still a little off. We can recalculate the deltas and lerp again. With each recalculation, we swing around the accurate point like a dampening sin wave. With the right relax value (lerp input) this process is shortened. Currently, my relxas is set to 0.7 with 3 iterations. Note that the code below is my own, but the approximation solution was *not* my own.
 
@@ -91,11 +91,11 @@ This repository does not contain any scripts from Unity, as any code of interest
 
 The next system that was added was a splashing system. An advantage or Gerstner waves was that it was *really* easy to further displace vertices; I only needed to add the splash function to the preexisting Gerstner function. To do this, I created a custom node in the HLSL script that could create a splash and used generic wave propogation equations straight out of my mechanics class. 
 
-  $\ y(r, t) = A\sin(kr - \omega t) $<br>
+  $ y(r, t) = A\sin(kr - \omega t) $<br>
 
   where
 
-  $\ r = \sqrt{(worldPos.x - waveOrigin.x)^2 + (worldPos.z - waveOrigin.z)^2}<br>
+  $ r = \sqrt{(worldPos.x - waveOrigin.x)^2 + (worldPos.z - waveOrigin.z)^2} $<br>
 
   This wave equation was then multiplied by a a fadeOut and fadeIn equation, both of which simply go from 0 to 1 in a short period of time. Finally, the equation was passed into a lerp function, where the added height from the splash would go from y(r, t) to 0 in a set amount of time. The only thing I would change about this in the future would be changing the dampening of the splash to be a sigmoid instead of a linear function. Additionally, this function is **not** accurate to, for example, a cannonball splash. For correct physics, the vertices would need to follow Navier-Stokes equations upon the initial impact. The effect is still convincing when covered by particles and pixelated.
 
@@ -146,8 +146,11 @@ The next system that was added was a splashing system. An advantage or Gerstner 
 
   To transfer data from script to HLSL, I designed a class named SplashInfo. It currently has three functions: AddWave, UpdateShader, and DeleteWaves. What's nice is that SplashInfo contains modifiable lists, but when it transfers data to the water material, it only sends an array (currently of size 16). There is one instance of SplashInfo that exists, so other scripts can easily access it and summon splashes. Currently, the camera performs a raycast when the user left-clicks. If the raycast hits water, then a splash is spawned at that location. Additionally, the boat constantly cycles through splashes to create a wake. Additionally, in the same MonoBehavior as SplashInfo (but outside the class!) there is a function that can change the water intensity. It is a multiplier to the Gerstner waves' amplitudes. This can be used for dynamic weather. 
 
-  <img width="1674" height="842" alt="Screenshot 2025-12-24 201822" src="https://github.com/user-attachments/assets/04d3661a-4abd-4dde-97dc-3e6671679cdd" /><br>
-*Figure 3: Splash Created from Raycast*
+  ![ShadedSplashed](https://github.com/user-attachments/assets/b1254a95-af0c-4fc1-b5ab-e9f175ea940e)<br>
+*Figure 3: Shaded Splash Created from Raycast*
+
+![WireFrameSplash](https://github.com/user-attachments/assets/ab8e9a9b-9b30-4c51-b9a0-765dbaef43a5)<br>
+*Figure 4: Wireframe Splash Created from Raycast*
   
   That concludes my graphics intro! In the end, I made no shortage of mistakes; but learned from all of them. Though I was never satisfied with the water from this project, I feel confident that the next time I create water it will exceed my original vision!
     
