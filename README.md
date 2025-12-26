@@ -95,11 +95,11 @@ private void CalculateHeightMap()
 
     Gerstner Wave Equations:
     
-    $\ x = \alpha - \sum_{M}^{m = 1}\frac{k_{x,m}}{k_m}\frac{a_m}{\tanh(k_mh)}sin(\theta_m) $
+    $\ x = \alpha - \sum_{m = 1}^{M}\frac{k_{x,m}}{k_m}\frac{a_m}{\tanh(k_mh)}sin(\theta_m) $
     
-    $\ y = \sum_{M}^{m = 1}a_mcos(\theta_m) $
+    $\ y = \sum_{m = 1}^{M}a_mcos(\theta_m) $
     
-    $\ z = \beta - \sum_{M}^{m = 1}\frac{k_{z,m}}{k_m}\frac{a_m}{\tanh(k_mh)}sin(\theta_m) $
+    $\ z = \beta - \sum_{m = 1}^{M}\frac{k_{z,m}}{k_m}\frac{a_m}{\tanh(k_mh)}sin(\theta_m) $
 
     where
 
