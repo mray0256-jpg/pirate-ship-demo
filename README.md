@@ -17,12 +17,75 @@ This repository does not contain any scripts from Unity, as any code of interest
 ## What I learned
 - This project was my first Unity project. I started it with the intention of making a two-week long basic pirate ship game, in which a pirate ship travels around shooting cannonballs at sea monsters and plundering the seas. However, my ambitions quickly grew out of proportion, as they are wont to do. Since the art style was simple pixel art, I wanted to try and tackle a gripe I had with other pixel art top-down water: faking it. I wanted water that dynamically changed, and had forces which would act on the player. As you'll soon discover, this went through a couple iterations.
   
-  - Attempt one: My first try was making a grid of cells. If one cell grew in magnitude, the cells around it would also increase. All cells had a dampening factor and there was a "wave" equation that would pass through all cells, repeating over time. However, this wave propogation never quite worked, and trying to visualize a thousand cells with no knowledge of anything GPU failed. This first attempt quickly grew too laggy and I realized I needed to up my game.
+  - Attempt one: My first try was making a grid of cells. If one cell grew in magnitude, the cells around it would also increase. All cells had a dampening factor and there was a "wave" equation that would pass through all cells, repeating over time. However, this wave propogation never quite worked, and trying to visualize a thousand cells with no knowledge of anything GPU failed. I also kept all the xy cell positions in a 1D array, which wound up being horribly complicated. Even despite naive attempts at pre-optimizing, my first attempt quickly grew too laggy and I realized I needed to up my game.
     
-  - Attemp two: I stuck with the same system, but tried something else: instead of the cells belonging to world position, they followed the player around. If the player moved, the values inside the cells moved dynamically too. Again, conceptually I don't think this was a terrible idea, I simply did not know enough code to achieve it satisfyingly. If I were to redo either of these, I'd use hashsets, dictionaries, compute shaders, and shadergraph.
+  - Attemp two: I stuck with the same system, but tried something else: instead of the cells belonging to world position, they followed the player around. If the player moved, the values inside the cells moved dynamically too. Again, conceptually I don't think this was a terrible idea, I simply did not know enough to achieve it satisfyingly. If I were to redo either of these, I'd use hashsets, dictionaries, 2D lists/arrays, and all things GPU (compute shaders my beloved).
 
 ![OldSplash](https://github.com/user-attachments/assets/19beae01-da6c-458d-9e9b-4ef95cd8a223)
 *Figure 2: First attempt at Creating Splashes*
+
+	- Before I move onto the final attempt, I figured I would include some of the code used in both of these iterations. This code only renders a border around the player, and forgets all other data. It's used in the gif above. There are numerous issues, but the most glaring is setting a texture2D on the CPU.
+
+```csharp
+Vector2 getForce(int indexedPos, float xRatio, float yRatio)
+{
+    //Calculates the negative direction of the slope using first order forward finite differences
+    Vector2 unitForce = new Vector2(0f, 0f);
+    unitForce.x = ((heightCurrent[indexedPos + 1] - heightCurrent[indexedPos]) / (CellSize)) * (1 - yRatio)
+        + ((heightCurrent[indexedPos + 1 + GridWidth] - heightCurrent[indexedPos + GridWidth]) / (CellSize)) * (yRatio);
+    unitForce.y = ((heightCurrent[indexedPos + GridWidth] - heightCurrent[indexedPos]) / (CellSize)) * (1 - xRatio)
+        + ((heightCurrent[indexedPos + 1 + GridWidth] - heightCurrent[indexedPos + 1]) / (CellSize)) * (xRatio);
+    return -unitForce.normalized;
+    ;
+}
+
+float findShipHeight(int coord, float xRatio, float yRatio)
+{
+    //finds the wave amplitude at the ship and scales the force applied from a wave. Yes, it's disgusting...
+    return (Mathf.Lerp((Mathf.Lerp(heightCurrent[coord], heightCurrent[coord + 1], xRatio)), (Mathf.Lerp(heightCurrent[coord + GridWidth], heightCurrent[coord + GridWidth + 1], xRatio)), yRatio));
+}
+
+private void CalculateHeightMap()
+{
+    Rigidbody2D rb = ship.GetComponent<Rigidbody2D>();
+    Vector2 location = ship.transform.position / CellSize;
+    Pos p = new Pos(Mathf.FloorToInt((location.x + GridWidth) / 2), Mathf.FloorToInt((location.y + GridHeight) / 2));
+    float pFracX = location.x - p.x;
+    float pFracY = location.y - p.y; //use the fractions to bilinearly interpolate the force applied to the ship. NOT used for waves.
+    int indexedPos = Mathf.Clamp(toArrayCoord(p), 0, (GridWidth * GridHeight)); //clamp to ensure the index is within the bounds of the array. "Buffer Zone" will cover out of bounds errors.
+                                                                                // Debug.Log(indexedPos);
+    for (int i = indexedPos - (renderRadius * (GridWidth + 1)); i <= (indexedPos + renderRadius * (GridWidth + 1)); i++)
+    {
+        //this first line is the most confusing. It generates new heightMap values from the old.
+        //Essentially, it takes the four sides adjacent and generates an average with a weighted dampening amount associated with the previous height.
+        if (i % GridWidth == 0 || (i + 1) % GridWidth == 0 || i < GridWidth || i > ((GridHeight - 1) * GridWidth))
+        {
+            continue;
+        }
+        if ((i % GridWidth) > ((indexedPos % GridWidth) - renderRadius) && (i % GridWidth) < ((indexedPos % GridWidth) + renderRadius))//prevents the code from modifying the sides
+        {
+            heightNew[i] = Mathf.Clamp01(((2 - WaveDampening) * heightCurrent[i])
+                - ((1 - WaveDampening) * heightPrev[i])
+                + WaveSpeed * WaveSpeed * Time.fixedDeltaTime * Time.fixedDeltaTime
+                * (heightCurrent[i - 1] + heightCurrent[i + 1] + heightCurrent[i + GridWidth] + heightCurrent[i - GridWidth] - (4 * heightCurrent[i])));
+            if (heightNew[i] < 0.0001)
+            {
+                heightNew[i] = 0;
+            }
+            byte gray = (byte)(64 + (heightCurrent[i] * 191));
+            pixels[i] = new Color32(255, gray, 0, 255);
+        }
+    }
+    Water.SetPixels32(pixels);
+    Water.Apply(false, false);
+    float[] temp = heightPrev;
+    heightPrev = heightCurrent;
+    heightCurrent = heightNew;
+    heightNew = temp;
+
+    rb.AddForce((getForce(indexedPos, pFracX, pFracY)) * WaveIntensity * findShipHeight(indexedPos, pFracX, pFracY), ForceMode2D.Force);
+}
+```
 
   - Attempt three: This time, I completely started from scratch. I began work on this iteration *after* the Texas Game Jam, one of my other projects. I switched from true 2D to 2.5D, in which the world was composed of 3D models but the camera was top down and the resolution scaled dramatically down. I modeled a basic pirate ship in blender, then imported it into Unity and got to work. After switching to designing in 3D, I dedicated this project to be an intro to graphics... and I found myself quickly overwhelmed. The first thing I did was learn shadergraph. This seemed the most simple of the nice-to-know graphics features. However, I quickly fell into a trap: relying on tutorials. Since my previous attempts were unsuccessful, I tried using more resources. This included YouTube, StackOverflow, Reddit, and AI. Most of the sources I found were way beyond my scope. I didn't fully absorb tutorials, and was soon walking out of finished scripts or sub graphs feeling even *less* sure than before. This led to complications quite quickly; before long I had problems with underlying systems that I didn't know how to change. I stuck with what I had, though, because it wasn't terrible. Not exactly presentable, but not an eyesore.
 
@@ -105,7 +168,7 @@ This repository does not contain any scripts from Unity, as any code of interest
 *Figure 5: Pirate Ship with Buouys*
   
 
-The next system that was added was a splashing system. An advantage or Gerstner waves was that it was *really* easy to further displace vertices; I only needed to add the splash function to the preexisting Gerstner function. To do this, I created a custom node in the HLSL script that could create a splash and used generic wave propogation equations straight out of my mechanics class. 
+	The next system that was added was a splashing system. An advantage or Gerstner waves was that it was *really* easy to further displace vertices; I only needed to add the splash function to the preexisting Gerstner function. To do this, I created a custom node in the HLSL script that could create a splash and used generic wave propogation equations straight out of my mechanics class. 
 
   $\y(r, t) = A\sin(kr - \omega t) $
 
@@ -113,9 +176,9 @@ The next system that was added was a splashing system. An advantage or Gerstner 
 
   $\r = \sqrt{(worldPos.x - waveOrigin.x)^2 + (worldPos.z - waveOrigin.z)^2} $
 
-  This wave equation was then multiplied by a a fadeOut and fadeIn equation, both of which simply go from 0 to 1 in a short period of time. Finally, the equation was passed into a lerp function, where the added height from the splash would go from y(r, t) to 0 in a set amount of time. The only thing I would change about this in the future would be changing the dampening of the splash to be a sigmoid instead of a linear function. Additionally, this function is **not** accurate to, for example, a cannonball splash. For correct physics, the vertices would need to follow Navier-Stokes equations upon the initial impact. The effect is still convincing when covered by particles and pixelated.
+	This wave equation was then multiplied by a a fadeOut and fadeIn equation, both of which simply go from 0 to 1 in a short period of time. Finally, the equation was passed into a lerp function, where the added height from the splash would go from y(r, t) to 0 in a set amount of time. The only thing I would change about this in the future would be changing the dampening of the splash to be a sigmoid instead of a linear function. Additionally, this function is **not** accurate to, for example, a cannonball splash. For correct physics, the vertices would need to follow Navier-Stokes equations upon the initial impact. The effect is still convincing when covered by particles and pixelated.
 
-  Now onto coding the problem. This was my first time using HLSL. Naturally, there was a two hour period of diagnosing bugs as shader graph tried to access the wrong file. I am still not entirely sure why, but I chalked it up to poor internet and moved on. One of my future project goals is to build a small DS-like console out of a Raspberry Pi and similar components. When I do, I would like to import my Unity projects. Regardless of whether that comes to fruition, I designed this project with the ability to be run on a lightweight device. Because of this, I decided to limit the spawned waves with fixed arrays. This also made transferring data to materials easy.
+	Now onto coding the problem. This was my first time using HLSL. Naturally, there was a two hour period of diagnosing bugs as shader graph tried to access the wrong file. I am still not entirely sure why, but I chalked it up to poor internet and moved on. One of my future project goals is to build a small DS-like console out of a Raspberry Pi and similar components. When I do, I would like to import my Unity projects. Regardless of whether that comes to fruition, I designed this project with the ability to be run on a lightweight device. Because of this, I decided to limit the spawned waves with fixed arrays. This also made transferring data to materials easy.
 
   ```csharp
   #ifndef SPLASH_NODE
